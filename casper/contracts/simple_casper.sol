@@ -1,3 +1,133 @@
+pragma solidity ^0.4.8;
+
+//num -> int: a signed integer strictly between -2**128 and 2**128
+//decimal -> not sure, have to have some factor here: a decimal fixed point value with the integer component being a signed integer strictly between -2**128 and 2**128 and the fractional component being ten decimal places
+//timestamp -> uint: a timestamp value
+//timedelta -> uint: a number of seconds (note: two timedeltas can be added together, as can a timedelta and a timestamp, but not two timestamps)
+//wei_value -> uint: an amount of wei
+//currency_value -> uint: an amount of currency
+//address -> addess: an address
+//bytes32 -> bytes32: 32 bytes
+//bool -> bool: true or false
+//type[length] -> array of fixed size: finite list
+//bytes <= maxlen -> not sure. Can use function to enforce invariant: a byte array with the given maximum length
+//{base_type: type} -> mapping: map (can only be accessed, NOT iterated)
+//[arg1(type), arg2(type)...] -> stuct: struct (can be accessed via struct.argname)
+
+contract simple_casper {
+    struct Validator {
+      // Amount of wei the validator holds
+      uint deposit;
+      // The dynasty the validator is joining
+      int dynasty_start;
+      // The dynasty the validator joined for the first time
+      int original_dynasty_start;
+      // The dynasty the validator is leaving
+      int dynasty_end;
+      // The timestamp at which the validator can withdraw
+      int withdrawal_epoch;
+      // The address which the validator's signatures must verify to (to be later replaced with validation code)
+      address addr;
+      // Addess to withdraw to
+      address withdrawal_addr;
+      // Previous epoch in which this validator committed
+      int prev_commit_epoch;
+    }
+    mapping (int => Validator) validators;
+
+    // The current dynasty (validator set changes between dynasties)
+    int public dynasty;
+    // Amount of wei added to the total deposits in the next dynasty
+    uint next_dynasty_wei_delta;
+    // Amount of wei added to the total deposits in the dynasty after that
+    uint second_next_dynasty_wei_delta;
+    // Total deposits during this dynasty
+    mapping (int => uint) total_deposits;
+    // Mapping of dynasty to start epoch of that dynasty
+    mapping (int => int) dynasty_start_epoch;
+    // Mapping of epoch to what dynasty it is
+    mapping (int => int) dynasty_in_epoch;
+
+    // Information for use in processing cryptoeconomic commitments
+    struct consensus_message {
+      // How many prepares are there for this hash (hash of message hash + view source) from the current dynasty
+      mapping (bytes32 => uint) prepares;
+      // Bitmap of which validator IDs have already prepared
+      mapping (bytes32 => mapping (int => uint)) prepare_bitmap;
+      // From the previous dynasty
+      mapping (bytes32 => uint) prev_dyn_prepares;
+      // Is a prepare referencing the given ancestry hash justified?
+      mapping (bytes32 => bool) ancestry_hash_justified;
+      // Is a commit on the given hash justified?
+      mapping (bytes32 => bool) hash_justified;
+      // How many commits are there for this hash
+      mapping (bytes32 => uint) commits;
+      // And from the previous dynasty
+      mapping (bytes32 => uint) prev_dyn_commits;
+      // Was the block committed?
+      bool committed;
+      // Value used to calculate the per-epoch fee that validators should be charged
+      //deposit_scale_factor: decimal <- not sure about this one :(
+    }
+    mapping (int => consensus_message) consensus_messages;  // index: epoch
+
+    // A bitmap, where the ith bit of dynasty_mark[arg1][arg2] shows
+    // whether or not validator arg1 is active during dynasty arg2*256+i
+    //dynasty_mask: num256[num][num] <- yeah, what?
+
+    // ancestry[x][y] = k > 0: x is a kth generation ancestor of y
+    //ancestry: public(num[bytes32][bytes32])
+
+    // Number of validators
+    int public nextValidatorIndex;
+
+    // Time between blocks
+    uint block_time;
+
+    // Length of an epoch in blocks
+    int epoch_length;
+
+    // Withdrawal delay
+    uint withdrawal_delay;
+
+    // Delay after which a message can be slashed due to absence of justification
+    uint insufficiency_slash_delay;
+
+    // Current epoch
+    int public current_epoch;
+
+    // Can withdraw destroyed deposits
+    address owner;
+
+    // Total deposits destroyed
+    uint total_destroyed;
+
+    // Sighash calculator library address
+    address sighasher;
+
+    // Purity checker library address
+    address purity_checker;
+
+    // Reward for preparing or committing, as fraction of deposit size
+    //reward_factor: public(decimal) <- not sure.
+
+    // Desired total ether given out assuming 1M ETH deposited
+    //reward_at_1m_eth: decimal <- not sure.
+
+    // Have I already been initialized?
+    bool initialized;
+
+    // Log topic for prepare
+    event prepare(bytes data); //Note: data.length <= 1024
+
+    // Log topic for commit
+    event commit(bytes data); //Note: data.length <= 1024
+}
+
+
+
+
+
 // Information about validators
 validators: public({
     // Amount of wei the validator holds
