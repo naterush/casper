@@ -122,6 +122,53 @@ contract simple_casper {
 
     // Log topic for commit
     event commit(bytes data); //Note: data.length <= 1024
+
+    //NOTE: Have to add as_wei_value() function
+
+    function simple_casper {
+      require (!initialized);
+      initialized = true;
+      // Set Casper parameters
+      block_time = 14;
+      sepoch_length = 100;
+      // Only ~11.5 days, for testing purposes
+      withdrawal_delay = 1000000;
+      // Only ~1 day, for testing purposes
+      insufficiency_slash_delay = 86400;
+      // Temporary backdoor for testing purposes (to allow recovering destroyed deposits)
+      owner = 0x1Db3439a222C519ab44bb1144fC28167b4Fa6EE6;
+      // Add an initial validator
+      validators[0] = Validator({
+          //deposit: as_wei_value(3, ether),
+          dynasty_start: 0,
+          dynasty_end: 1000000000000000000000000000000,
+          original_dynasty_start: 0,
+          withdrawal_epoch: 1000000000000000000000000000000,
+          addr: 0x1Db3439a222C519ab44bb1144fC28167b4Fa6EE6,
+          withdrawal_addr: 0x1Db3439a222C519ab44bb1144fC28167b4Fa6EE6,
+          prev_commit_epoch: 0,
+      });
+      nextValidatorIndex = 1;
+      // Initialize the epoch counter
+      current_epoch = block.number / epoch_length;
+      // Set the sighash calculator address
+      sighasher = 0x476c2cA9a7f3B16FeCa86512276271FAf63B6a24;
+      // Set the purity checker address
+      purity_checker = 0xD7a3BD6C9eA32efF147d067f907AE6b22d436F91;
+      // Set an initial root of the epoch hash chain
+      consensus_messages[0].ancestry_hash_justified[0x0000000000000000000000000000000000000000000000000000000000000000] = true;
+      // self.consensus_messages[0].committed = True
+      // Set initial total deposit counter
+      //total_deposits[0] = as_wei_value(3, ether)
+      // Set deposit scale factor
+      //consensus_messages[0].deposit_scale_factor = 1000000000000000000.0
+      // Total ETH given out assuming 1m ETH deposits
+      //reward_at_1m_eth = 12.5;
+      // Log topics for prepare and commit
+      //self.prepare_log_topic = sha3("prepare()")
+      //self.commit_log_topic = sha3("commit()")
+
+    }    
 }
 
 
