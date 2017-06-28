@@ -125,7 +125,7 @@ contract simple_casper {
 
     //NOTE: Have to add as_wei_value() function
 
-    function simple_casper {
+    function simple_casper () {
       require (!initialized);
       initialized = true;
       // Set Casper parameters
@@ -167,8 +167,49 @@ contract simple_casper {
       // Log topics for prepare and commit
       //self.prepare_log_topic = sha3("prepare()")
       //self.commit_log_topic = sha3("commit()")
+    }
 
-    }    
+    // Called at the start of any epoch
+    function initialize_epoch(int epoch) {
+      // Check that the epoch actually has started
+      int computed_current_epoch = block.number / epoch_length;
+      require (epoch <= computed_current_epoch && epoch == current_epoch + 1)
+
+      // Set the epoch number
+      current_epoch = epoch
+      // Increment the dynasty
+      if (consensus_messages[epoch - 1].committed) {
+        dynasty += 1;
+        total_deposits[dynasty] = total_deposits[self.dynasty - 1] + next_dynasty_wei_delta;
+        next_dynasty_wei_delta = second_next_dynasty_wei_delta;
+        second_next_dynasty_wei_delta = 0;
+        dynasty_start_epoch[self.dynasty] = epoch;
+      }
+      dynasty_in_epoch[epoch] = dynasty;
+
+      /* NOTE: this math is hard to do in solidity. Some gnarly tests are needed 4 this :)
+
+      // Compute square root factor
+      ether_deposited_as_number = self.total_deposits[self.dynasty] / as_wei_value(1, ether)
+      sqrt = ether_deposited_as_number / 2.0
+      for i in range(20):
+          sqrt = (sqrt + (ether_deposited_as_number / sqrt)) / 2
+      // Reward factor is the reward given for preparing or committing as a
+      // fraction of that validator's deposit size
+      base_coeff = 1.0 / sqrt * (self.reward_at_1m_eth / 1000)
+      // Rules:
+      // * You are penalized 2x per epoch
+      // * If you prepare, you get 1.5x, and if you commit you get another 1.5x
+      // Hence, assuming 100% performance, your reward per epoch is x
+      self.reward_factor = 1.5 * base_coeff
+      self.consensus_messages[epoch].deposit_scale_factor = self.consensus_messages[epoch - 1].deposit_scale_factor * (1 - 2 * base_coeff)
+
+      */
+    }
+
+    
+
+
 }
 
 
